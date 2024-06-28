@@ -46,6 +46,8 @@ def menu(opcion, cursor):
         ver_equipos_disponibles(cursor)
     elif opcion == '17':
         ver_equipos_ocupados(cursor)
+    elif opcion == '18':
+        crear_funcion_y_trigger(cursor)
 
 # CRUD de usuarios
 #-----------------------------------------------------------
@@ -316,6 +318,32 @@ def eliminar_prestamo(cursor):
         print(f"Error {e} al eliminar el préstamo")
 
 #-----------------------------------------------------------
+
+def crear_funcion_y_trigger(cursor):
+    try:
+        cursor.execute("""
+            CREATE OR REPLACE FUNCTION verificar_prestamos()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                IF (SELECT COUNT(*) FROM prestamos WHERE id_usuario = NEW.id_usuario) >= 3 THEN
+                    RAISE EXCEPTION 'El usuario ya tiene 3 préstamos activos';
+                END IF;
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+        """)
+        cursor.execute("COMMIT")
+
+        cursor.execute("""
+            CREATE TRIGGER trigger_verificar_prestamos
+            BEFORE INSERT ON prestamos
+            FOR EACH ROW
+            EXECUTE FUNCTION verificar_prestamos();
+        """)
+        cursor.execute("COMMIT")
+        print("Función y trigger creados")
+    except Exception as e:
+        print(f"Error {e} al crear la función y el trigger")
 
 def crear_tabla_usuarios(cursor):
     try:
