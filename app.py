@@ -469,6 +469,8 @@ try:
         print("------ INFORMACION ADICIONAL ------")
         print("16.- EQUIPOS DISPONIBLES")
         print("17.- EQUIPOS EN PRÉSTAMO")
+        print("------ FUNCIONES Y TRIGGERS ------")
+        print("18.- CREAR FUNCION Y TRIGGER")
 
         opcion = input("Ingrese una opción: ")
         menu(opcion, cursor)
