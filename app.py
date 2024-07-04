@@ -1,4 +1,7 @@
 import psycopg2
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 def conexion():
     connection = psycopg2.connect(
@@ -8,6 +11,29 @@ def conexion():
         port="5432",
         database="Inventario")
     return connection
+
+def send_email(to_address):
+    from_address = "tuemail@example.com"
+    subject = "Límite de préstamos excedido"
+    body = "Ha sobrepasado el límite de tres préstamos activos."
+
+    msg = MIMEMultipart()
+    msg['From'] = from_address
+    msg['To'] = to_address
+    msg['Subject'] = subject
+
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        server = smtplib.SMTP('smtp.example.com', 587)
+        server.starttls()
+        server.login(from_address, "tucontraseña")
+        text = msg.as_string()
+        server.sendmail(from_address, to_address, text)
+        server.quit()
+        print("Correo enviado")
+    except Exception as e:
+        print(f"Error al enviar correo: {e}")
 
 def menu(opcion, cursor):
     if opcion == '0':
@@ -244,7 +270,11 @@ def crear_prestamo(cursor):
         """)
         cursor.execute("COMMIT")
         print("Préstamo creado")
-    except Exception as e:
+    except psycopg2.Error as e:
+        if e.pgcode == 'P0001':  # Capturamos la excepción específica lanzada por el trigger
+            cursor.execute(f"SELECT correo FROM usuarios WHERE id = {id_usuario}")
+            correo_usuario = cursor.fetchone()[0]
+            send_email(correo_usuario)  # Enviamos el correo al usuario
         cursor.execute("ROLLBACK")
         print(f"Error {e} al crear el préstamo")
 
